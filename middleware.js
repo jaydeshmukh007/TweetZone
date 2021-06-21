@@ -3,6 +3,6 @@ exports.requireLogin = (req, res, next) => {
         return next();
     }
     else {
-        return res.resdirect('/login');
+        return res.redirect('/login');
     }
 }

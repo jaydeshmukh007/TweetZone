@@ -4,6 +4,14 @@ const port = 3003;
 const middleware = require('./middleware');
 const path = require('path');
 const bodyParser = require('body-parser');
+const mongoose = require("mongoose");
+mongoose.connect('mongodb+srv://admin:admin123@cluster0.z9fv8.mongodb.net/TweetCloneDB?retryWrites=true&w=majority')
+.then(() => {
+    console.log("database connection successful");
+})
+.catch((err) => {
+    console.log("database connection error " + err);
+})
 
 const server = app.listen(port,() => {
     console.log('Server listening on port '+ port);
@@ -13,7 +21,6 @@ app.set("view engine","pug");
 app.set("views","views");
 
 app.use(bodyParser.urlencoded({ extended: false }));
-
 app.use(express.static(path.join(__dirname,"public")));
 
 // Routes

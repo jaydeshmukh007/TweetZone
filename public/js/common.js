@@ -2,16 +2,13 @@ $("#postTextarea, #replyTextarea").keyup(event => {
     var textbox = $(event.target);
     var value = textbox.val().trim();
 
-    var isModal = textbox.parents('.modal').length == 1;
+    var isModal = textbox.parents(".modal").length == 1;
     
     var submitButton = isModal ? $("#submitReplyButton") : $("#submitPostButton");
 
-    if(submitButton.length == 0)
-    {
-        return alert("No submit button found");
-    }
+    if(submitButton.length == 0) return alert("No submit button found");
 
-    if(value == "") {
+    if (value == "") {
         submitButton.prop("disabled", true);
         return;
     }
@@ -22,15 +19,14 @@ $("#postTextarea, #replyTextarea").keyup(event => {
 $("#submitPostButton, #submitReplyButton").click(() => {
     var button = $(event.target);
 
-    var isModal = button.parents('.modal').length == 1;
-
+    var isModal = button.parents(".modal").length == 1;
     var textbox = isModal ? $("#replyTextarea") : $("#postTextarea");
 
     var data = {
         content: textbox.val()
     }
 
-    if(isModal) {
+    if (isModal) {
         var id = button.data().id;
         if(id == null) return alert("Button id is null");
         data.replyTo = id;
@@ -45,32 +41,27 @@ $("#submitPostButton, #submitReplyButton").click(() => {
             var html = createPostHtml(postData);
             $(".postsContainer").prepend(html);
             textbox.val("");
-            button.prop("disabled", true); 
+            button.prop("disabled", true);
         }
-       
-            
     })
 })
 
 $("#replyModal").on("show.bs.modal", (event) => {
     var button = $(event.relatedTarget);
     var postId = getPostIdFromElement(button);
-    $("#submitReplyButton").data("id",postId);
-    
+    $("#submitReplyButton").data("id", postId);
+
     $.get("/api/posts/" + postId, results => {
         outputPosts(results.postData, $("#originalPostContainer"));
     })
 })
 
-$("#replyModal").on("hidden.bs.modal", () => {
-    $("#originalPostContainer").html("");
-})
+$("#replyModal").on("hidden.bs.modal", () => $("#originalPostContainer").html(""));
 
 $("#deletePostModal").on("show.bs.modal", (event) => {
     var button = $(event.relatedTarget);
     var postId = getPostIdFromElement(button);
-    $("#deletePostButton").data("id",postId);
-    
+    $("#deletePostButton").data("id", postId);
 })
 
 $("#deletePostButton").click((event) => {
@@ -80,23 +71,21 @@ $("#deletePostButton").click((event) => {
         url: `/api/posts/${postId}`,
         type: "DELETE",
         success: (data, status, xhr) => {
-            
-            if(xhr.status != 202){
+
+            if(xhr.status != 202) {
                 alert("could not delete post");
                 return;
             }
+            
             location.reload();
-
         }
     })
-    
 })
 
-
-$(document).on("click",".likeButton",(event) => {
+$(document).on("click", ".likeButton", (event) => {
     var button = $(event.target);
     var postId = getPostIdFromElement(button);
-
+    
     if(postId === undefined) return;
 
     $.ajax({
@@ -118,17 +107,16 @@ $(document).on("click",".likeButton",(event) => {
 
 })
 
-$(document).on("click",".retweetButton",(event) => {
+$(document).on("click", ".retweetButton", (event) => {
     var button = $(event.target);
     var postId = getPostIdFromElement(button);
-
+    
     if(postId === undefined) return;
 
     $.ajax({
         url: `/api/posts/${postId}/retweet`,
         type: "POST",
-        success: (postData) => {
-
+        success: (postData) => {            
             button.find("span").text(postData.retweetUsers.length || "");
 
             if(postData.retweetUsers.includes(userLoggedIn._id)) {
@@ -143,7 +131,7 @@ $(document).on("click",".retweetButton",(event) => {
 
 })
 
-$(document).on("click",".post",(event) => {
+$(document).on("click", ".post", (event) => {
     var element = $(event.target);
     var postId = getPostIdFromElement(element);
 
@@ -154,7 +142,7 @@ $(document).on("click",".post",(event) => {
 
 function getPostIdFromElement(element) {
     var isRoot = element.hasClass("post");
-    var rootElement = isRoot ? element : element.closest(".post");
+    var rootElement = isRoot == true ? element : element.closest(".post");
     var postId = rootElement.data().id;
 
     if(postId === undefined) return alert("Post id undefined");
@@ -164,89 +152,89 @@ function getPostIdFromElement(element) {
 
 function createPostHtml(postData, largeFont = false) {
 
-    if(postData == null) return alert("Post object is null");
+    if(postData == null) return alert("post object is null");
 
     var isRetweet = postData.retweetData !== undefined;
-    var retweetedBy = isRetweet? postData.postedBy.username : null;
+    var retweetedBy = isRetweet ? postData.postedBy.username : null;
     postData = isRetweet ? postData.retweetData : postData;
-
+    
     var postedBy = postData.postedBy;
 
     if(postedBy._id === undefined) {
-        return console.log("User Object not populated")
+        return console.log("User object not populated");
     }
 
     var displayName = postedBy.firstName + " " + postedBy.lastName;
     var timestamp = timeDifference(new Date(), new Date(postData.createdAt));
 
-    var likeButtonActiveClass = postData.likes.includes(userLoggedIn._id)? "active":"";
-    var retweetButtonActiveClass = postData.retweetUsers.includes(userLoggedIn._id)? "active":"";
+    var likeButtonActiveClass = postData.likes.includes(userLoggedIn._id) ? "active" : "";
+    var retweetButtonActiveClass = postData.retweetUsers.includes(userLoggedIn._id) ? "active" : "";
     var largeFontClass = largeFont ? "largeFont" : "";
 
-    var retweetText = "";
+    var retweetText = '';
     if(isRetweet) {
         retweetText = `<span>
-                        <i class="fas fa-retweet"></i>
-                        Retweeted by <a href='/profile/${retweetedBy}'>@${retweetedBy}</a>
-                       </span>`
+                        <i class='fas fa-retweet'></i>
+                        Retweeted by <a href='/profile/${retweetedBy}'>@${retweetedBy}</a>    
+                    </span>`
     }
 
     var replyFlag = "";
-    if(postData.replyTo && postData.replyTo._id) { 
-
+    if(postData.replyTo && postData.replyTo._id) {
+        
         if(!postData.replyTo._id) {
-            return;
+            return alert("Reply to is not populated");
         }
         else if(!postData.replyTo.postedBy._id) {
             return alert("Posted by is not populated");
         }
 
         var replyToUsername = postData.replyTo.postedBy.username;
-        replyFlag = `<div class="replyFlag">
-                        Replying to <a href='/profile/${replyToUsername}'>@${replyToUsername}</a>
+        replyFlag = `<div class='replyFlag'>
+                        Replying to <a href='/profile/${replyToUsername}'>@${replyToUsername}<a>
                     </div>`;
+
     }
 
-    var buttons = ""
-    if(postData.postedBy._id == userLoggedIn._id) {
-        buttons = `<button data-id="${postData._id}" data-toggle="modal" data-target="#deletePostModal"><i class='fas fa-times'></i></button>`
+    var buttons = "";
+    if (postData.postedBy._id == userLoggedIn._id) {
+        buttons = `<button data-id="${postData._id}" data-toggle="modal" data-target="#deletePostModal"><i class='fas fa-times'></i></button>`;
     }
-    
 
-    return `<div class="post ${largeFontClass}" data-id='${postData._id}'>
-                <div class="postActionContainer">
+    return `<div class='post ${largeFontClass}' data-id='${postData._id}'>
+                <div class='postActionContainer'>
                     ${retweetText}
                 </div>
-                <div class="mainContentContainer">
-                    <div class="userImageContainer">
-                        <img src='${postedBy.profilePic}'>  
+                <div class='mainContentContainer'>
+                    <div class='userImageContainer'>
+                        <img src='${postedBy.profilePic}'>
                     </div>
-                    <div class="postContentContainer">
-                        <div class="header">
-                            <a href="/profile/${postedBy.username}" class='displayName'>${displayName}</a>
-                            <span class="username">@${postedBy.username}</span>
-                            <span class="date">${timestamp}</span>
+                    <div class='postContentContainer'>
+                        <div class='header'>
+                            <a href='/profile/${postedBy.username}' class='displayName'>${displayName}</a>
+                            <span class='username'>@${postedBy.username}</span>
+                            <span class='date'>${timestamp}</span>
                             ${buttons}
                         </div>
-                        ${replyFlag} 
-                        <div class="postBody">
+                        ${replyFlag}
+                        <div class='postBody'>
                             <span>${postData.content}</span>
                         </div>
-                        <div class="postFooter">
-                            <div class="postButtonContainer">
-                                <button data-toggle="modal" data-target="#replyModal">
-                                    <i class="far fa-comment"></i>
+                        <div class='postFooter'>
+                            <div class='postButtonContainer'>
+                                <button data-toggle='modal' data-target='#replyModal'>
+                                    <i class='far fa-comment'></i>
                                 </button>
                             </div>
-                            <div class="postButtonContainer green">
-                                <button class="retweetButton ${retweetButtonActiveClass}">
-                                    <i class="fas fa-retweet"></i>
+                            <div class='postButtonContainer green'>
+                                <button class='retweetButton ${retweetButtonActiveClass}'>
+                                    <i class='fas fa-retweet'></i>
                                     <span>${postData.retweetUsers.length || ""}</span>
                                 </button>
                             </div>
-                            <div class="postButtonContainer red">
-                                <button class="likeButton ${likeButtonActiveClass}">
-                                    <i class="far fa-heart"></i>
+                            <div class='postButtonContainer red'>
+                                <button class='likeButton ${likeButtonActiveClass}'>
+                                    <i class='far fa-heart'></i>
                                     <span>${postData.likes.length || ""}</span>
                                 </button>
                             </div>
@@ -268,7 +256,8 @@ function timeDifference(current, previous) {
 
     if (elapsed < msPerMinute) {
         if(elapsed/1000 < 30) return "Just now";
-         return Math.round(elapsed/1000) + ' seconds ago';   
+        
+        return Math.round(elapsed/1000) + ' seconds ago';   
     }
 
     else if (elapsed < msPerHour) {
@@ -300,11 +289,11 @@ function outputPosts(results, container) {
     }
 
     results.forEach(result => {
-        var html = createPostHtml(result);
+        var html = createPostHtml(result)
         container.append(html);
     });
 
-    if(results.length == 0) {
+    if (results.length == 0) {
         container.append("<span class='noResults'>Nothing to show.</span>")
     }
 }
@@ -313,15 +302,15 @@ function outputPostsWithReplies(results, container) {
     container.html("");
 
     if(results.replyTo !== undefined && results.replyTo._id !== undefined) {
-        var html = createPostHtml(results.replyTo);
+        var html = createPostHtml(results.replyTo)
         container.append(html);
     }
 
-    var mainPostHtml = createPostHtml(results.postData, true);
+    var mainPostHtml = createPostHtml(results.postData, true)
     container.append(mainPostHtml);
 
     results.replies.forEach(result => {
-        var html = createPostHtml(result);
+        var html = createPostHtml(result)
         container.append(html);
     });
 }

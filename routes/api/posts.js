@@ -21,8 +21,16 @@ router.get("/",async (req, res, next) => {
     //     console.log(error);
     //     res.sendStatus(400);
     // })
+    var searchObj = req.query;
 
-    var results = await getPosts({});
+    if(searchObj.isReply !== undefined) {
+        var isReply = searchObj.isReply == "true";
+        searchObj.replyTo = { $exists: isReply };
+        delete searchObj.isReply;
+        console.log(searchObj);
+    }
+
+    var results = await getPosts(searchObj);
     res.status(200).send(results);
 });
 

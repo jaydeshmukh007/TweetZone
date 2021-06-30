@@ -140,6 +140,32 @@ $(document).on("click", ".post", (event) => {
     }
 });
 
+$(document).on("click", ".followButton", (event) => {
+    var button = $(event.target);
+    var userId = button.data().user;
+    
+    $.ajax({
+        url: `/api/users/${userId}/follow`,
+        type: "PUT",
+        success: (data, status, xhr) => {  
+            
+            if(xhr.status == 404) {
+                alert("User not found");
+                return;
+            }
+
+            if(data.following && data.following.includes(userId)) {
+                button.addClass("following");
+            }
+            else {
+                button.removeClass("following");
+            }
+
+        }
+    })
+
+});
+
 function getPostIdFromElement(element) {
     var isRoot = element.hasClass("post");
     var rootElement = isRoot == true ? element : element.closest(".post");

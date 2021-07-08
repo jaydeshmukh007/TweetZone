@@ -12,4 +12,4 @@ const UserSchema = new Schema({
 
 
 
-module.exports = mongoose.model('Chat', UserSchema);;
+module.exports = mongoose.model('Chat', UserSchema);

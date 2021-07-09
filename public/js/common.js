@@ -637,3 +637,22 @@ function createUserHtml(userData, showFollowButton) {
                 ${followButton}
             </div>`
 }
+
+function getChatName(chatData) {
+    var chatName = chatData.chatName;
+
+    if(!chatName) {
+        var otherChatusers = getOtherChatUsers(chatData.users);
+        var namesArray =  otherChatusers.map(user => user.firstName + " " + user.lastName);
+        chatName = namesArray.join(", ");
+    }
+    return chatName;
+}
+
+function getOtherChatUsers(users) {
+    if(users.length == 1) return users;
+
+    return users.filter((user) => {
+        return user._id != userLoggedIn._id;
+    })
+}

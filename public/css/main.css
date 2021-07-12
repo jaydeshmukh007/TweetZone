@@ -691,6 +691,7 @@ button span {
   flex-shrink: 0;
 }
 
+.typingDots img,
 .chatMessages .message .messageBody {
   background-color: #f1f0f0;
   padding: 6px 12px;
@@ -785,4 +786,15 @@ button span {
 .loadingSpinnerContainer img {
   width: 50%;
   max-width: 75px;
+}
+
+.typingDots img {
+  height: 35px;
+}
+
+.typingDots {
+  padding: var(--spacing);
+  padding-bottom: 0;
+  display: none;
+
 }

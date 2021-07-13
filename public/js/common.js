@@ -362,6 +362,17 @@ $(document).on("click", ".followButton", (event) => {
 
 });
 
+$(document).on("click", ".notification.active", (e) => {
+    var container = $(e.target);
+    var notificationId = container.data().id;
+
+    var href = container.attr("href");
+    e.preventDefault();
+
+    var callback = () => window.location = href;
+    markNotificationsAsOpened(notificationId, callback);
+})
+
 function searchUsers(searchTerm) {
     $.get("/api/users", {search: searchTerm}, results => {
         outputSelectableUsers(results, $(".resultsContainer"));
@@ -664,4 +675,15 @@ function messageReceived(newMessage) {
     else {
         addChatMessageHtml(newMessage);
     }
+}
+
+function markNotificationsAsOpened(notificationId = null, callback = null) {
+    if(callback == null) callback = () => location.reload();
+
+    var url = notificationId != null ? `/api/notifications/${notificationId}/markAsOpened` : `/api/notifications/markAsOpened`;
+    $.ajax({
+        url: url,
+        type: "PUT",
+        success: () => callback()
+    })
 }

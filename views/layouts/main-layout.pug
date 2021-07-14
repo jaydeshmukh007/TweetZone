@@ -24,8 +24,10 @@ html(lang="en")
                         i.fas.fa-search 
                     a(href="/notifications")
                         i.fas.fa-bell
+                        span#notificationBadge
                     a(href="/messages")
                         i.fas.fa-envelope
+                        span#messagesBadge
                     a(href="/profile")
                         i.fas.fa-user
                     a(href="/logout")
@@ -39,6 +41,7 @@ html(lang="en")
                     block content
 
                 .d-none.d-md-block.col-md-2.col-lg-4
+        #notificationList
 
         
         script(src='https://kit.fontawesome.com/0945f22498.js' crossorigin='anonymous')

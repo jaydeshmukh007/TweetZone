@@ -1,7 +1,12 @@
-//Globals
+// Globals
 var cropper;
 var timer;
 var selectedUsers = [];
+
+$(document).ready(() => {
+    refreshMessagesBadge();
+    refreshNotificationsBadge();
+})
 
 $("#postTextarea, #replyTextarea").keyup(event => {
     var textbox = $(event.target);
@@ -40,6 +45,7 @@ $("#submitPostButton, #submitReplyButton").click(() => {
     $.post("/api/posts", data, postData => {
 
         if(postData.replyTo) {
+            emitNotification(postData.replyTo.postedBy)
             location.reload();
         }
         else {
@@ -105,7 +111,7 @@ $("#pinPostButton").click((event) => {
     $.ajax({
         url: `/api/posts/${postId}`,
         type: "PUT",
-        data: {pinned: true},
+        data: { pinned: true },
         success: (data, status, xhr) => {
 
             if(xhr.status != 204) {
@@ -124,7 +130,7 @@ $("#unpinPostButton").click((event) => {
     $.ajax({
         url: `/api/posts/${postId}`,
         type: "PUT",
-        data: {pinned: false},
+        data: { pinned: false },
         success: (data, status, xhr) => {
 
             if(xhr.status != 204) {
@@ -137,7 +143,7 @@ $("#unpinPostButton").click((event) => {
     })
 })
 
-$("#filePhoto").change(function() {  
+$("#filePhoto").change(function(){    
     if(this.files && this.files[0]) {
         var reader = new FileReader();
         reader.onload = (e) => {
@@ -151,14 +157,17 @@ $("#filePhoto").change(function() {
             cropper = new Cropper(image, {
                 aspectRatio: 1 / 1,
                 background: false
-            })
+            });
 
         }
         reader.readAsDataURL(this.files[0]);
     }
+    else {
+        console.log("nope")
+    }
 })
 
-$("#coverPhoto").change(function() {  
+$("#coverPhoto").change(function(){    
     if(this.files && this.files[0]) {
         var reader = new FileReader();
         reader.onload = (e) => {
@@ -172,7 +181,7 @@ $("#coverPhoto").change(function() {
             cropper = new Cropper(image, {
                 aspectRatio: 16 / 9,
                 background: false
-            })
+            });
 
         }
         reader.readAsDataURL(this.files[0]);
@@ -183,7 +192,7 @@ $("#imageUploadButton").click(() => {
     var canvas = cropper.getCroppedCanvas();
 
     if(canvas == null) {
-        alert("Could not upload image.Make sure it is image file.");
+        alert("Could not upload image. Make sure it is an image file.");
         return;
     }
 
@@ -206,7 +215,7 @@ $("#coverPhotoButton").click(() => {
     var canvas = cropper.getCroppedCanvas();
 
     if(canvas == null) {
-        alert("Could not upload image.Make sure it is image file.");
+        alert("Could not upload image. Make sure it is an image file.");
         return;
     }
 
@@ -230,18 +239,18 @@ $("#userSearchTextbox").keydown((event) => {
     var textbox = $(event.target);
     var value = textbox.val();
 
-    if(value == "" && (event.which == 8 || event.keyCode == 8)) {
+    if (value == "" && (event.which == 8 || event.keyCode == 8)) {
         // remove user from selection
         selectedUsers.pop();
         updateSelectedUsersHtml();
         $(".resultsContainer").html("");
 
         if(selectedUsers.length == 0) {
-            $("#createChatButton").prop('disabled', true);
+            $("#createChatButton").prop("disabled", true);
         }
 
         return;
-    } 
+    }
 
     timer = setTimeout(() => {
         value = textbox.val().trim();
@@ -257,16 +266,14 @@ $("#userSearchTextbox").keydown((event) => {
 })
 
 $("#createChatButton").click(() => {
-   var data = JSON.stringify(selectedUsers);
+    var data = JSON.stringify(selectedUsers);
 
-   $.post("/api/chats", {users: data}, (chat) => {
+    $.post("/api/chats", { users: data }, chat => {
 
-        if(!chat || !chat._id) {
-            return alert("Invalid response from server.");
-        }
+        if(!chat || !chat._id) return alert("Invalid response from server.");
 
         window.location.href = `/messages/${chat._id}`;
-   })
+    })
 })
 
 $(document).on("click", ".likeButton", (event) => {
@@ -284,6 +291,7 @@ $(document).on("click", ".likeButton", (event) => {
 
             if(postData.likes.includes(userLoggedIn._id)) {
                 button.addClass("active");
+                emitNotification(postData.postedBy)
             }
             else {
                 button.removeClass("active");
@@ -308,6 +316,7 @@ $(document).on("click", ".retweetButton", (event) => {
 
             if(postData.retweetUsers.includes(userLoggedIn._id)) {
                 button.addClass("active");
+                emitNotification(postData.postedBy)
             }
             else {
                 button.removeClass("active");
@@ -327,39 +336,40 @@ $(document).on("click", ".post", (event) => {
     }
 });
 
-$(document).on("click", ".followButton", (event) => {
-    var button = $(event.target);
+$(document).on("click", ".followButton", (e) => {
+    var button = $(e.target);
     var userId = button.data().user;
     
     $.ajax({
         url: `/api/users/${userId}/follow`,
         type: "PUT",
-        success: (data, status, xhr) => {  
+        success: (data, status, xhr) => { 
             
-            if(xhr.status == 404) {
-                alert("User not found");
+            if (xhr.status == 404) {
+                alert("user not found");
                 return;
             }
+            
             var difference = 1;
             if(data.following && data.following.includes(userId)) {
                 button.addClass("following");
                 button.text("Following");
+                emitNotification(userId);
             }
             else {
                 button.removeClass("following");
                 button.text("Follow");
                 difference = -1;
             }
+            
             var followersLabel = $("#followersValue");
             if(followersLabel.length != 0) {
-               var followersText = followersLabel.text();
-               followersText = parseInt(followersText);
-               followersLabel.text(followersText+difference);
+                var followersText = followersLabel.text();
+                followersText = parseInt(followersText);
+                followersLabel.text(followersText + difference);
             }
-
         }
     })
-
 });
 
 $(document).on("click", ".notification.active", (e) => {
@@ -372,12 +382,6 @@ $(document).on("click", ".notification.active", (e) => {
     var callback = () => window.location = href;
     markNotificationsAsOpened(notificationId, callback);
 })
-
-function searchUsers(searchTerm) {
-    $.get("/api/users", {search: searchTerm}, results => {
-        outputSelectableUsers(results, $(".resultsContainer"));
-    })
-}
 
 function getPostIdFromElement(element) {
     var isRoot = element.hasClass("post");
@@ -441,13 +445,13 @@ function createPostHtml(postData, largeFont = false) {
 
         var pinnedClass = "";
         var dataTarget = "#confirmPinModal";
-        if(postData.pinned === true) {
+        if (postData.pinned === true) {
             pinnedClass = "active";
             dataTarget = "#unpinModal";
             pinnedPostText = "<i class='fas fa-thumbtack'></i> <span>Pinned post</span>";
         }
 
-        buttons = ` <button class='pinButton ${pinnedClass}' data-id="${postData._id}" data-toggle="modal" data-target="${dataTarget}"><i class='fas fa-thumbtack'></i></button>
+        buttons = `<button class='pinButton ${pinnedClass}' data-id="${postData._id}" data-toggle="modal" data-target="${dataTarget}"><i class='fas fa-thumbtack'></i></button>
                     <button data-id="${postData._id}" data-toggle="modal" data-target="#deletePostModal"><i class='fas fa-times'></i></button>`;
     }
 
@@ -566,58 +570,16 @@ function outputPostsWithReplies(results, container) {
     });
 }
 
-function outputSelectableUsers(results, container) {
-    container.html("");
-    
-    results.forEach(result => {
-
-        if(result._id == userLoggedIn._id || selectedUsers.some(u => u._id == result._id)) {
-            return;
-        }
-
-        var html = createUserHtml(result, false);
-        var element = $(html);
-        element.click(() => userSelected(result));
-
-        container.append(element);
-    });
-
-    if(results.length == 0) {
-        container.append("<span class='noResults'>No results found</span>");
-    }
-}
-
-function userSelected(user) {
-    selectedUsers.push(user);
-    updateSelectedUsersHtml();
-    $("#userSearchTextbox").val("").focus();
-    $(".resultsContainer").html("");
-    $("#createChatButton").prop('disabled',false);
-}
-
-function updateSelectedUsersHtml() {
-    var elements = [];
-
-    selectedUsers.forEach(user => {
-        var name = user.firstName + " " + user.lastName;
-        var userElement = $(`<span class="selectedUser">${name}</span>`);
-        elements.push(userElement);
-    })
-
-    $(".selectedUser").remove();
-    $("#selectedUsers").prepend(elements);
-}
-
 function outputUsers(results, container) {
     container.html("");
-    
+
     results.forEach(result => {
         var html = createUserHtml(result, true);
         container.append(html);
     });
 
     if(results.length == 0) {
-        container.append("<span class='noResults'>No results found</span>");
+        container.append("<span class='noResults'>No results found</span>")
     }
 }
 
@@ -625,17 +587,17 @@ function createUserHtml(userData, showFollowButton) {
 
     var name = userData.firstName + " " + userData.lastName;
     var isFollowing = userLoggedIn.following && userLoggedIn.following.includes(userData._id);
-    var followButton = "";
     var text = isFollowing ? "Following" : "Follow"
     var buttonClass = isFollowing ? "followButton following" : "followButton"
 
-    if(showFollowButton && userLoggedIn._id != userData._id) {
-        followButton = `<div class="followButtonContainer">
+    var followButton = "";
+    if (showFollowButton && userLoggedIn._id != userData._id) {
+        followButton = `<div class='followButtonContainer'>
                             <button class='${buttonClass}' data-user='${userData._id}'>${text}</button>
-                        </div>`
+                        </div>`;
     }
 
-    return `<div class="user">
+    return `<div class='user'>
                 <div class='userImageContainer'>
                     <img src='${userData.profilePic}'>
                 </div>
@@ -646,35 +608,85 @@ function createUserHtml(userData, showFollowButton) {
                     </div>
                 </div>
                 ${followButton}
-            </div>`
+            </div>`;
+}
+
+function searchUsers(searchTerm) {
+    $.get("/api/users", { search: searchTerm }, results => {
+        outputSelectableUsers(results, $(".resultsContainer"));
+    })
+}
+
+function outputSelectableUsers(results, container) {
+    container.html("");
+
+    results.forEach(result => {
+        
+        if(result._id == userLoggedIn._id || selectedUsers.some(u => u._id == result._id)) {
+            return;
+        }
+
+        var html = createUserHtml(result, false);
+        var element = $(html);
+        element.click(() => userSelected(result))
+
+        container.append(element);
+    });
+
+    if(results.length == 0) {
+        container.append("<span class='noResults'>No results found</span>")
+    }
+}
+
+function userSelected(user) {
+    selectedUsers.push(user);
+    updateSelectedUsersHtml()
+    $("#userSearchTextbox").val("").focus();
+    $(".resultsContainer").html("");
+    $("#createChatButton").prop("disabled", false);
+}
+
+function updateSelectedUsersHtml() {
+    var elements = [];
+
+    selectedUsers.forEach(user => {
+        var name = user.firstName + " " + user.lastName;
+        var userElement = $(`<span class='selectedUser'>${name}</span>`);
+        elements.push(userElement);
+    })
+
+    $(".selectedUser").remove();
+    $("#selectedUsers").prepend(elements);
 }
 
 function getChatName(chatData) {
     var chatName = chatData.chatName;
 
     if(!chatName) {
-        var otherChatusers = getOtherChatUsers(chatData.users);
-        var namesArray =  otherChatusers.map(user => user.firstName + " " + user.lastName);
-        chatName = namesArray.join(", ");
+        var otherChatUsers = getOtherChatUsers(chatData.users);
+        var namesArray = otherChatUsers.map(user => user.firstName + " " + user.lastName);
+        chatName = namesArray.join(", ")
     }
+
     return chatName;
 }
 
 function getOtherChatUsers(users) {
     if(users.length == 1) return users;
 
-    return users.filter((user) => {
-        return user._id != userLoggedIn._id;
-    })
+    return users.filter(user => user._id != userLoggedIn._id);
 }
 
 function messageReceived(newMessage) {
-    if($(".chatContainer").length == 0) {
+    if($(`[data-room="${newMessage.chat._id}"]`).length == 0) {
         // Show popup notification
+        showMessagePopup(newMessage);
     }
     else {
         addChatMessageHtml(newMessage);
     }
+
+    refreshMessagesBadge()
 }
 
 function markNotificationsAsOpened(notificationId = null, callback = null) {
@@ -686,4 +698,176 @@ function markNotificationsAsOpened(notificationId = null, callback = null) {
         type: "PUT",
         success: () => callback()
     })
+}
+
+function refreshMessagesBadge() {
+    $.get("/api/chats", { unreadOnly: true }, (data) => {
+        
+        var numResults = data.length;
+
+        if(numResults > 0) {
+            $("#messagesBadge").text(numResults).addClass("active");
+        }
+        else {
+            $("#messagesBadge").text("").removeClass("active");
+        }
+
+    })
+}
+
+function refreshNotificationsBadge() {
+    $.get("/api/notifications", { unreadOnly: true }, (data) => {
+        
+        var numResults = data.length;
+
+        if(numResults > 0) {
+            $("#notificationBadge").text(numResults).addClass("active");
+        }
+        else {
+            $("#notificationBadge").text("").removeClass("active");
+        }
+
+    })
+}
+
+function showNotificationPopup(data) {
+    var html = createNotificationHtml(data);
+    var element = $(html);
+    element.hide().prependTo("#notificationList").slideDown("fast");
+
+   setTimeout(() => element.fadeOut(400), 5000);
+}
+
+function showMessagePopup(data) {
+
+    if(!data.chat.latestMessage._id) {
+        data.chat.latestMessage = data;
+    }
+
+    var html = createChatHtml(data.chat);
+    var element = $(html);
+    element.hide().prependTo("#notificationList").slideDown("fast");
+
+   setTimeout(() => element.fadeOut(400), 5000);
+}
+
+function outputNotificationList(notifications, container) {
+    notifications.forEach(notification => {
+        var html = createNotificationHtml(notification);
+        container.append(html);
+    })
+
+    if(notifications.length == 0) {
+        container.append("<span class='noResults'>Nothing to show.</span>")
+    }
+}
+
+function createNotificationHtml(notification) {
+
+    var userFrom = notification.userFrom;
+    var text = getNotificationText(notification);
+    var href = getNotificationUrl(notification);
+    var className = notification.opened ? "" : "active";
+
+    return `<a href='${href}' class="resultListItem notification ${className}" data-id='${notification._id}'>
+                <div class="resultsImageContainer">
+                    <img src='${userFrom.profilePic}'>
+                </div>
+                <div class='resultsDetailsContainer ellipsis'>
+                        <span class='ellipsis'>${text}</span>
+                    </div>
+            </a>`;
+}
+
+function getNotificationText(notification) {
+
+    var userFrom = notification.userFrom;
+
+    if(!userFrom.firstName  || !userFrom.lastName) {
+            return alert("User data not populated.")
+    }
+
+    var userFromName = `${userFrom.firstName} ${userFrom.lastName}`;
+
+    var text;
+
+    if(notification.notificationType == "retweet") {
+        text = `${userFromName} retweeted one your posts`;
+    }
+    else if(notification.notificationType == "postLike") {
+        text = `${userFromName} liked one your posts`;
+    }
+    else if(notification.notificationType == "reply") {
+        text = `${userFromName} replied to one your posts`;
+    }
+    else if(notification.notificationType == "follow") {
+        text = `${userFromName} followed you`;
+    }
+
+    return `<span class='ellipsis'>${text}</span>`;
+}
+
+function getNotificationUrl(notification) {
+
+    var url;
+    var name = notification.userFrom.username;
+
+    if(notification.notificationType == "retweet" || 
+        notification.notificationType == "postLike" || 
+        notification.notificationType == "reply") {
+        
+            url = `/posts/${notification.entityId}`;
+    }
+    else if(notification.notificationType == "follow") {
+        url = `/profile/${name}`;
+    }
+
+    return url;
+}
+
+function createChatHtml(chatData) {
+    var chatName = getChatName(chatData);
+    var image = getChatImageElements(chatData);
+    var latestMessage = getLatestMessage(chatData.latestMessage);
+
+    var activeClass = !chatData.latestMessage || chatData.latestMessage.readBy.includes(userLoggedIn._id) ? "" : "active";
+
+    return `<a href="/messages/${chatData._id}" class="resultListItem ${activeClass}">
+            ${image}
+            <div class='resultsDetailsContainer ellipsis'>
+            <span class='heading ellipsis'>${chatName}</span>
+            <span class='subText ellipsis'>${latestMessage}</span>
+            </div>
+            </a>`
+}
+
+function getLatestMessage(latestMessage) {
+    if(latestMessage != null) {
+        var sender = latestMessage.sender;
+        return `${sender.firstName} ${sender.lastName}: ${latestMessage.content}`;
+    }
+
+    return "New chat";
+}
+
+function getChatImageElements(chatData) {
+    var otherChatUsers = getOtherChatUsers(chatData.users);
+
+    var groupChatClass = "";
+    var chatImage = getUserChatImageElement(otherChatUsers[0]);
+
+    if(otherChatUsers.length > 1) {
+        groupChatClass = "groupChatImage";
+        chatImage += getUserChatImageElement(otherChatUsers[1]);
+    }
+
+    return `<div class='resultsImageContainer ${groupChatClass}'>${chatImage}</div>`;
+}
+
+function getUserChatImageElement(user) {
+    if(!user || !user.profilePic) {
+        return alert("User passed into function is invalid.");
+    }
+
+    return `<img src="${user.profilePic}" alt="User's profile pic">`;
 }

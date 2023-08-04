@@ -11,7 +11,7 @@ class Database {
     }
 
     connect() {
-        mongoose.connect()
+        mongoose.connect("mongodb+srv://admin:admin123@cluster0.z9fv8.mongodb.net/TweetCloneDB?authSource=admin&replicaSet=atlas-x4e5as-shard-0&w=majority&readPreference=primary&retryWrites=true&ssl=true")
         .then(() => {
             console.log("database connection successful");
         })
